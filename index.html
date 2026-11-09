@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Мама, я тебя люблю</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: #1a1410;
+      font-family: 'Montserrat', sans-serif;
+      color: #f5e6d3;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========== ЗАСТАВКА ========== */
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, #2c2118 0%, #1a1410 60%, #0f0c0a 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 1.2s ease, visibility 1.2s;
+    }
+
+    #splash.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.4rem, 5vw, 2.2rem);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+
+    #startBtn {
+      background: transparent;
+      border: 1.5px solid rgba(245, 230, 211, 0.55);
+      color: #f5e6d3;
+      padding: 1rem 2.4rem;
+      font-size: 1.05rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    #startBtn:hover {
+      background: rgba(245, 230, 211, 0.12);
+      border-color: #f5e6d3;
+      transform: scale(1.03);
+    }
+
+    /* ========== ОСНОВНОЙ ЭКРАН ========== */
+    #stage {
+      position: fixed;
+      inset: 0;
+      background: #1a1410;
+      overflow: hidden;
+    }
+
+    /* Винтажный шум + виньетка */
+    #stage::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 20;
+      mix-blend-mode: overlay;
+    }
+
+    /* Контейнер фото */
+    .photo-layer {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 1.4s ease;
+      z-index: 1;
+    }
+
+    .photo-layer.active {
+      opacity: 1;
+      z-index: 2;
+    }
+
+    .photo-layer.polaroid {
+      z-index: 3;
+    }
+
+    .photo-frame {
+      position: relative;
+      max-width: 88vw;
+      max-height: 78vh;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+      overflow: hidden;
+      background: #111;
+    }
+
+    .photo-frame.normal {
+      border-radius: 2px;
+    }
+
+    /* Полароид */
+    .photo-frame.polaroid {
+      background: #f8f1e9;
+      padding: 14px 14px 48px 14px;
+      border-radius: 3px;
+      transform: rotate(var(--rot, -2deg));
+      box-shadow: 
+        0 20px 40px rgba(0,0,0,0.45),
+        0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    .photo-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 70vh;
+      object-fit: cover;
+      filter: sepia(0.18) contrast(1.05) brightness(0.97);
+      transform-origin: center center;
+    }
+
+    /* Ken Burns */
+    .photo-layer.active .photo-frame img {
+      animation: kenburns 12s ease-out forwards;
+    }
+
+    @keyframes kenburns {
+      0%   { transform: scale(1.05) translate(0, 0); }
+      100% { transform: scale(1.18) translate(1.5%, -1%); }
+    }
+
+    .photo-layer:nth-child(3n) .photo-frame img {
+      animation-name: kenburns-alt;
+    }
+
+    @keyframes kenburns-alt {
+      0%   { transform: scale(1.04) translate(0, 0); }
+      100% { transform: scale(1.16) translate(-1.8%, 1.2%); }
+    }
+
+    /* ========== ТЕКСТ ПЕСНИ ========== */
+    #lyrics {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0 1.5rem 8vh;
+      text-align: center;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .lyric-line {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.15rem, 4.2vw, 1.85rem);
+      font-weight: 400;
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+      color: #f8f0e6;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.75);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .lyric-line.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .lyric-line.highlight {
+      color: #ffe8c8;
+      font-weight: 600;
+      text-shadow: 0 0 24px rgba(255, 200, 140, 0.35), 0 2px 18px rgba(0,0,0,0.75);
+    }
+
+    /* ========== ФИНАЛЬНЫЙ ЭКРАН ========== */
+    #finale {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(18, 12, 8, 0.82);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 2s ease, visibility 2s;
+      z-index: 50;
+    }
+
+    #finale.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .finale-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 7vw, 3.2rem);
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-align: center;
+      color: #f5e6d3;
+      text-shadow: 0 4px 30px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: scale(0.92);
+      transition: opacity 1.5s ease 0.4s, transform 1.5s ease 0.4s;
+    }
+
+    #finale.show .finale-text {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Сердечки */
+    #hearts {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 40;
+    }
+
+    .heart {
+      position: absolute;
+      font-size: 18px;
+      color: #e8a0a0;
+      opacity: 0;
+      animation: floatHeart 4.5s ease-in forwards;
+      text-shadow: 0 0 8px rgba(232, 160, 160, 0.4);
+    }
+
+    @keyframes floatHeart {
+      0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.6) rotate(0deg);
+      }
+      15% {
+        opacity: 0.9;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100vh) scale(1.1) rotate(25deg);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .photo-frame {
+        max-width: 92vw;
+        max-height: 68vh;
+      }
+      .photo-frame.polaroid {
+        padding: 10px 10px 36px 10px;
+      }
+      #lyrics {
+        padding-bottom: 6vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ЗАСТАВКА -->
+  <div id="splash">
+    <div class="splash-title">для мамы</div>
+    <button id="startBtn">Мама, нажми сюда</button>
+  </div>
+
+  <!-- СЦЕНА -->
+  <div id="stage">
+    <div id="photoContainer"></div>
+
+    <div id="lyrics">
+      <div class="lyric-line" id="lyricText"></div>
+    </div>
+
+    <div id="hearts"></div>
+
+    <div id="finale">
+      <div class="finale-text">Мама, я тебя люблю</div>
+    </div>
+  </div>
+
+  <audio id="audio" preload="auto">
+    <source src="audio/daitetank-malenkiy.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    // ===================== ТАЙМЛАЙН =====================
+    const timeline = [
+      { time: 0,    photo: 0,  text: "", highlight: false },
+      { time: 8,    photo: 1,  text: "Я снова маленький: солнце яркое,\nмама опять сильнее всех в мире", highlight: false },
+      { time: 13,   photo: 2,  text: "Я снова боюсь собак\nи оставаться один в квартире", highlight: false },
+      { time: 17,   photo: 3,  text: "А деревья такие большие,\nнезнакомые плохие слова", highlight: false },
+      { time: 21,   photo: 4,  text: "Поиграем в прятки?\nМне, как раньше, по пояс трава", highlight: false },
+      { time: 26,   photo: 5,  text: "Это я не достаю до пола ногами\nИли пол до моих ног не достаёт?\nТе, кого я считал врагами\nПросто делают мёд, просто делают мёд", highlight: true, polaroid: true },
+      { time: 35,   photo: 6,  text: "Это я, только дети трясут головами\nНе узнали меня. Говорят, что не смогут помочь\nЯ стал сильнее, и теперь я не лягу к маме\nНо чудовища не пришли — я прождал их целую ночь", highlight: true },
+      { time: 44,   photo: 7,  text: "Я ещё не разучился радоваться:\nрисую осколками кирпичей", highlight: false },
+      { time: 52,   photo: 8,  text: "В резиновых сапогах не страшно\nмерить весной ногами ручей", highlight: false },
+      { time: 57,   photo: 9,  text: "Красные яблоки падают вниз,\nкогда ветер сильнее дует", highlight: false },
+      { time: 61,   photo: 10, text: "Тише, меня зовут есть!\nЯ не голоден, но никого не волнует", highlight: false },
+      { time: 65,   photo: 11, text: "Это я не достаю до пола ногами\nИли пол до моих ног не достаёт?\nТе, кого я считал врагами\nПросто делают мёд, просто делают мёд", highlight: true },
+      { time: 73,   photo: 12, text: "Это я, только дети трясут головами\nНе узнали меня. Говорят, что не смогут помочь\nЯ стал сильнее, и теперь я не лягу к маме\nНо чудовища не пришли — я прождал их целую ночь", highlight: true },
+      { time: 82,   photo: 13, text: "Снова зима: меня везут на санках,\nснеговик до утра подождёт\nА дома тепло и пахнет ёлкой,\nв клубок свернулся кот", highlight: false },
+      { time: 100,  photo: 14, text: "Вот моё отражение в шаре,\nгирлянда мигает цветными огнями\nЯ сижу на скрипучем стуле\nи не достаю до пола ногами", highlight: false },
+      // Быстрая смена всех фото (примерно 1:49–2:07)
+      { time: 109, photo: 0,  text: "Это я не достаю до пола ногами...", highlight: true, cycle: true },
+      { time: 127, photo: -1, text: "", highlight: false, finale: true }
+    ];
+
+    // ===================== ЭЛЕМЕНТЫ =====================
+    const splash = document.getElementById('splash');
+    const startBtn = document.getElementById('startBtn');
+    const audio = document.getElementById('audio');
+    const photoContainer = document.getElementById('photoContainer');
+    const lyricText = document.getElementById('lyricText');
+    const finale = document.getElementById('finale');
+    const heartsContainer = document.getElementById('hearts');
+
+    let currentIndex = -1;
+    let isPlaying = false;
+    let cycleInterval = null;
+    let heartsInterval = null;
+
+    // ===================== СОЗДАНИЕ СЛОЁВ ФОТО =====================
+    function createPhotoLayers() {
+      for (let i = 0; i < 15; i++) {
+        const layer = document.createElement('div');
+        layer.className = 'photo-layer';
+        layer.dataset.index = i;
+
+        const frame = document.createElement('div');
+        frame.className = 'photo-frame normal';
+
+        const img = document.createElement('img');
+        img.src = `images/photo${i + 1}.jpg`;
+        img.alt = `Воспоминание ${i + 1}`;
+        img.loading = 'eager';
+
+        frame.appendChild(img);
+        layer.appendChild(frame);
+        photoContainer.appendChild(layer);
+      }
+    }
+
+    // ===================== ПОКАЗ ФОТО =====================
+    function showPhoto(index, isPolaroid = false) {
+      const layers = document.querySelectorAll('.photo-layer');
+      layers.forEach(l => {
+        l.classList.remove('active', 'polaroid');
+        const frame = l.querySelector('.photo-frame');
+        frame.classList.remove('polaroid');
+        frame.classList.add('normal');
+        frame.style.setProperty('--rot', '0deg');
+      });
+
+      if (index < 0 || index > 14) return;
+
+      const layer = layers[index];
+      const frame = layer.querySelector('.photo-frame');
+
+      if (isPolaroid) {
+        layer.classList.add('polaroid');
+        frame.classList.remove('normal');
+        frame.classList.add('polaroid');
+        const rot = (Math.random() * 6 - 3).toFixed(1);
+        frame.style.setProperty('--rot', `${rot}deg`);
+      }
+
+      // Перезапуск Ken Burns
+      const img = frame.querySelector('img');
+      img.style.animation = 'none';
+      img.offsetHeight;
+      img.style.animation = '';
+
+      layer.classList.add('active');
+    }
+
+    // ===================== ТЕКСТ =====================
+    function showLyric(text, highlight = false) {
+      lyricText.classList.remove('visible', 'highlight');
+      setTimeout(() => {
+        lyricText.innerHTML = text.replace(/\n/g, '<br>');
+        if (highlight) lyricText.classList.add('highlight');
+        lyricText.classList.add('visible');
+      }, 180);
+    }
+
+    // ===================== БЫСТРАЯ СМЕНА =====================
+    function startCycle() {
+      let idx = 0;
+      const order = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14];
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+
+      cycleInterval = setInterval(() => {
+        showPhoto(order[idx % order.length], idx % 4 === 0);
+        idx++;
+      }, 1800);
+    }
+
+    function stopCycle() {
+      if (cycleInterval) {
+        clearInterval(cycleInterval);
+        cycleInterval = null;
+      }
+    }
+
+    // ===================== СЕРДЕЧКИ =====================
+    function createHeart() {
+      const heart = document.createElement('div');
+      heart.className = 'heart';
+      heart.textContent = Math.random() > 0.3 ? '♥' : '♡';
+      heart.style.left = Math.random() * 100 + 'vw';
+      heart.style.bottom = '-20px';
+      heart.style.fontSize = (14 + Math.random() * 16) + 'px';
+      heart.style.animationDuration = (3.5 + Math.random() * 2.5) + 's';
+      heart.style.animationDelay = Math.random() * 0.3 + 's';
+      heartsContainer.appendChild(heart);
+      setTimeout(() => heart.remove(), 7000);
+    }
+
+    function startHearts() {
+      for (let i = 0; i < 8; i++) {
+        setTimeout(createHeart, i * 180);
+      }
+      heartsInterval = setInterval(createHeart, 320);
+    }
+
+    // ===================== ОСНОВНОЙ ЛУП =====================
+    function updateTimeline() {
+      if (!isPlaying) return;
+
+      const t = audio.currentTime;
+      let nextIndex = -1;
+
+      for (let i = 0; i < timeline.length; i++) {
+        if (t >= timeline[i].time) {
+          nextIndex = i;
+        } else {
+          break;
+        }
+      }
+
+      if (nextIndex !== currentIndex && nextIndex >= 0) {
+        currentIndex = nextIndex;
+        const item = timeline[nextIndex];
+
+        if (item.finale) {
+          stopCycle();
+          document.querySelectorAll('.photo-layer').forEach(l => l.classList.remove('active'));
+          lyricText.classList.remove('visible');
+          finale.classList.add('show');
+          startHearts();
+          return;
+        }
+
+        if (item.cycle) {
+          showLyric(item.text, item.highlight);
+          startCycle();
+        } else {
+          stopCycle();
+          showPhoto(item.photo, !!item.polaroid);
+          showLyric(item.text, item.highlight);
+        }
+      }
+
+      requestAnimationFrame(updateTimeline);
+    }
+
+    // ===================== ЗАПУСК =====================
+    startBtn.addEventListener('click', () => {
+      splash.classList.add('hidden');
+      audio.play().then(() => {
+        isPlaying = true;
+        createPhotoLayers();
+        showPhoto(0);
+        updateTimeline();
+      }).catch(err => {
+        console.error('Ошибка воспроизведения:', err);
+        alert('Не удалось запустить аудио.\nПроверь файл audio/daitetank-malenkiy.mp3');
+      });
+    });
+
+    audio.addEventListener('ended', () => {
+      isPlaying = false;
+      stopCycle();
+      document.querySelectorAll('.photo-layer').forEach(l => l.classList.remove('active'));
+      lyricText.classList.remove('visible');
+      finale.classList.add('show');
+      startHearts();
+    });
+  </script>
+</body>
+</html>
